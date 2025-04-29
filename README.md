@@ -1,7 +1,5 @@
 # 🛡️ Complete Ethical Hacking & Web App Pentesting Guide
 
-No time constraints now — this version offers full explanations, advanced examples, and complete tooling.
-
 ---
 
 ## ⚙️ PHASE 1: Setup & Mindset
@@ -297,4 +295,6 @@ Explain potential damage.
 - Always try to **chain attacks**
 - Practice in **realistic CTF labs**
 - Stay **legal**. Stay **ethical**. Stay **relentless**.
+
+## 🎤 Regards to [Sifat](https://sifat-mdsafitmia.github.io)
 
