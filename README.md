@@ -305,4 +305,4 @@ Explain potential damage.
 
 ## 🎤 Shoutout
 
-* Guide by [Sifat](https://sifat-xyz.vercel.app)
+* Guide by [Sifat](https://sifat-mdsafitmia.github.io)
